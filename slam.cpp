@@ -102,6 +102,10 @@ int main(int argc, char **argv)
     double keyframe_threshold = atof(pd.getData("keyframe_threshold").c_str());
     //将“是否执行闭环检测”设定为yes
     bool check_loop_closure = pd.getData("check_loop_closure") == string("yes");
+    vector<int> allframe;
+    allframe.push_back(-1);
+    allframe.push_back(0);
+    int ifkey = 0;
 
     for (currIndex = startIndex + 1; currIndex < endIndex; currIndex++)
     {
@@ -143,11 +147,20 @@ int main(int argc, char **argv)
             }
             //将当前帧压入关键帧的堆栈
             keyframes.push_back(currFrame);
-
+            ifkey = 1;
             break;
         default:
             break;
         }
+        if (ifkey)
+        {
+            allframe.push_back(keyframes.size() - 1);
+        }
+        else
+        {
+            allframe.push_back(-1);
+        }
+        ifkey = 0;
     }
 
     // 优化（得到相机的位姿）
@@ -158,6 +171,9 @@ int main(int argc, char **argv)
     globalOptimizer.save("./result_after.g2o");
     cout << "Optimization done." << endl;
 
+
+double gridsize = atof(pd.getData("voxel_grid").c_str()); //分辨图可以在parameters.txt里调
+
     //pcl实时显示
     pcl::visualization::CloudViewer viewer("viewer");
     bool visualize = pd.getData("visualize_pointcloud") == string("yes");
@@ -167,19 +183,19 @@ int main(int argc, char **argv)
     double sem_ProbHit_;
     double sem_ProbMiss_;
     double prob_thres_ = 0.5;
-    cell_resolution_ = 0.03;                             //octomap是吗以八叉树形式存储，这里设置地图的分辨率
+    cell_resolution_ = gridsize;                             //octomap是吗以八叉树形式存储，这里设置地图的分辨率
     semMap = new octomap::ColorOcTree(cell_resolution_); //创建指向地图对象的指针
     semMap->setClampingThresMax(1.0);                    //在八叉树中，用概率表示一个节点是否被占据，这里设置概率的最大值和最小值
     semMap->setOccupancyThres(0);
-    octomap::ColorOcTree tree(0.03);
+    octomap::ColorOcTree tree(gridsize);
     //place2005test------start
     SemanticLabel semlabel;
     for (int i = 0; i < semlabel.labelname.size(); i++)
     {
         int temp;
-        temp=semlabel.labelcolor[i][0];
-        semlabel.labelcolor[i][0]=semlabel.labelcolor[i][2];
-        semlabel.labelcolor[i][2]=temp;
+        temp = semlabel.labelcolor[i][0];
+        semlabel.labelcolor[i][0] = semlabel.labelcolor[i][2];
+        semlabel.labelcolor[i][2] = temp;
     }
     ::google::InitGoogleLogging(argv[0]);
 
@@ -227,119 +243,133 @@ int main(int argc, char **argv)
     pass.setFilterFieldName("z");
     pass.setFilterLimits(0.0, 4.0); //4m以上就不要了
 
-    double gridsize = atof(pd.getData("voxel_grid").c_str()); //分辨图可以在parameters.txt里调
+    
     voxel.setLeafSize(gridsize, gridsize, gridsize);
     //
-    cv::namedWindow("pic+test");  
+    cv::namedWindow("pic+test");
     //
-    for (size_t i = 0; i < keyframes.size(); i++)
+            int outlabel = 0;
+cv::Mat img_ori;
+float per[semlabel.labelname.size()];
+    for (size_t alli = 1; alli < allframe.size(); alli++)
     {
-        // 从g2o优化结果中读取当前帧优化过后的相机位姿
-        g2o::VertexSE3 *vertex = dynamic_cast<g2o::VertexSE3 *>(globalOptimizer.vertex(keyframes[i].frameID));
-        Eigen::Isometry3d pose = vertex->estimate();
-        //将当前关键帧转换为点云                                              //该帧优化后的位姿
-        PointCloud::Ptr newCloud = image2PointCloud(keyframes[i].rgb, keyframes[i].depth, camera); //转成点云
-        // 对当前地图分辨率等进行优化，滤波
-        voxel.setInputCloud(newCloud);
-        voxel.filter(*tmp);
-        pass.setInputCloud(tmp);
-        pass.filter(*newCloud);
-        // 把点云变换后加入全局地图中
-        pcl::transformPointCloud(*newCloud, *tmp, pose.matrix());
-        //对当前场景进行预测
-        cv::Mat img = keyframes[i].rgb;
-        vector<Prediction> predictions = classifier.Classify(img);
-        int outlabel = 0;
-        for (int idx = 0; idx < predictions.size(); idx++)
+        if (allframe[alli]!=-1)
         {
-            if (predictions[outlabel].second < predictions[idx].second)
-            {
-                outlabel = idx;
-            }
-            //cout << semlabel.labelname[idx] << '\t' <<predictions[idx].second<<'\t'<< semlabel.labelidx[idx] << '\t' << semlabel.labelcolor[idx][0] << '\t' << semlabel.labelcolor[idx][1] << '\t' << semlabel.labelcolor[idx][2] << '\t' << endl;
-        }
-        //cout<<semlabel.labelname[outlabel]<<endl;
-        //图像加文字
-        cv::Mat img_ori=img.clone();
-        IplImage img_text_n;
-        img_text_n=IplImage(img_ori);
-        IplImage* img_text=&img_text_n;
-        int text_x=3;
-        int text_y=33;
-        CvFont font;
-        cvInitFont(&font, CV_FONT_HERSHEY_DUPLEX, 0.5, 0.5, 0, 1, 4);
-        for (int idx = 0; idx < predictions.size(); idx++)
-        {
-            cvRectangle(img_text,cvPoint(text_x,text_y),cvPoint(text_x+0+int(100*float(predictions[idx].second)),text_y - 6), cvScalar(255,0,0),6);
-            if (outlabel == idx)
-            {
-                cvPutText(img_text,semlabel.labelname[idx].c_str(),cvPoint(text_x,text_y),&font,cvScalar(0,255,0));
-            }
-            else
-            {
-                cvPutText(img_text,semlabel.labelname[idx].c_str(),cvPoint(text_x,text_y),&font,cvScalar(0,0,255));
- 
-            }
-            text_y += 18;
-        }
-        //cv::Mat img_res;
-       // cv::resize(img,img_res,cv::Size(1280,960));
-        cvShowImage("pic+test",img_text);
-        
-        cv::waitKey(30); 
-        //
-        for (auto ite : tmp->points)
-        {
+            int i=allframe[alli];
+            // 从g2o优化结果中读取当前帧优化过后的相机位姿
+            g2o::VertexSE3 *vertex = dynamic_cast<g2o::VertexSE3 *>(globalOptimizer.vertex(keyframes[i].frameID));
+            Eigen::Isometry3d pose = vertex->estimate();
+            //将当前关键帧转换为点云                                              //该帧优化后的位姿
+            PointCloud::Ptr newCloud = image2PointCloud(keyframes[i].rgb, keyframes[i].depth, camera); //转成点云
+            // 对当前地图分辨率等进行优化，滤波
+            voxel.setInputCloud(newCloud);
+            voxel.filter(*tmp);
+            pass.setInputCloud(tmp);
+            pass.filter(*newCloud);
+            // 把点云变换后加入全局地图中
+            pcl::transformPointCloud(*newCloud, *tmp, pose.matrix());
+            //对当前场景进行预测
+            cv::Mat img = keyframes[i].rgb;
+            vector<Prediction> predictions = classifier.Classify(img);
+
             for (int idx = 0; idx < predictions.size(); idx++)
             {
-                octomap::point3d point(ite.x, idx, ite.z);
-                float lo = std::log(predictions[idx].second / (1 - predictions[idx].second)); //logit变换
-                semMap->updateNode(point, lo);
-                octomap::ColorOcTreeNode *cell = semMap->search(point);
-                octomap::ColorOcTreeNode::Color cS(semlabel.labelcolor[idx][0], semlabel.labelcolor[idx][1], semlabel.labelcolor[idx][2]);
-                cell->setColor(cS);
-            }
-        }
-        for (octomap::ColorOcTree::iterator itr = semMap->begin_leafs(), end = semMap->end_leafs(); itr != end; itr++)
-        {
-            octomap::ColorOcTreeNode *cell = semMap->search(itr.getCoordinate());
-            for (int idx = 0; idx < predictions.size(); idx++)
-            {
-                octomap::ColorOcTreeNode *tcell = semMap->search(itr.getCoordinate().x(), idx, itr.getCoordinate().z());
-                if (tcell->getOccupancy() > cell->getOccupancy())
+                if (predictions[outlabel].second < predictions[idx].second)
                 {
-                    cell = tcell;
+                    outlabel = idx;
+                }
+                per[idx]=float(predictions[idx].second);
+                //cout << semlabel.labelname[idx] << '\t' <<predictions[idx].second<<'\t'<< semlabel.labelidx[idx] << '\t' << semlabel.labelcolor[idx][0] << '\t' << semlabel.labelcolor[idx][1] << '\t' << semlabel.labelcolor[idx][2] << '\t' << endl;
+            }
+            //cout<<semlabel.labelname[outlabel]<<endl;
+            //图像加文字
+            img_ori = img.clone();
+
+            //
+            for (auto ite : tmp->points)
+            {
+                for (int idx = 0; idx < predictions.size(); idx++)
+                {
+                    octomap::point3d point(ite.x, idx, ite.z);
+                    float lo = std::log(predictions[idx].second / (1 - predictions[idx].second)); //logit变换
+                    semMap->updateNode(point, lo);
+                    octomap::ColorOcTreeNode *cell = semMap->search(point);
+                    octomap::ColorOcTreeNode::Color cS(semlabel.labelcolor[idx][0], semlabel.labelcolor[idx][1], semlabel.labelcolor[idx][2]);
+                    cell->setColor(cS);
                 }
             }
-            PointT p;
-            p.x = itr.getCoordinate().x();
-            p.z = itr.getCoordinate().z();
-            p.y = 0;
-            octomap::ColorOcTreeNode::Color c = cell->getColor();
-            p.r = c.r;
-            p.g = c.g;
-            p.b = c.b;
-            semout2->points.push_back(p);
+            for (octomap::ColorOcTree::iterator itr = semMap->begin_leafs(), end = semMap->end_leafs(); itr != end; itr++)
+            {
+                octomap::ColorOcTreeNode *cell = semMap->search(itr.getCoordinate());
+                for (int idx = 0; idx < predictions.size(); idx++)
+                {
+                    octomap::ColorOcTreeNode *tcell = semMap->search(itr.getCoordinate().x(), idx, itr.getCoordinate().z());
+                    if (tcell->getOccupancy() > cell->getOccupancy())
+                    {
+                        cell = tcell;
+                    }
+                }
+                PointT p;
+                p.x = itr.getCoordinate().x();
+                p.z = itr.getCoordinate().z();
+                p.y = 0;
+                octomap::ColorOcTreeNode::Color c = cell->getColor();
+                p.r = c.r;
+                p.g = c.g;
+                p.b = c.b;
+                semout2->points.push_back(p);
+            }
+            //高翔的octomap start
+            octomap::Pointcloud cloud_octo;
+            for (auto p : tmp->points)
+                cloud_octo.push_back(p.x, p.y, p.z);
+
+            tree.insertPointCloud(cloud_octo,
+                                  octomap::point3d(pose(0, 3), pose(1, 3), pose(2, 3)));
+
+            for (auto p : tmp->points)
+                tree.integrateNodeColor(p.x, p.y, p.z, p.r, p.g, p.b);
+            //高翔的octomap end
+            *output += *tmp;
+            tmp->clear();
+            newCloud->clear();
+            semtmp->clear();
+            if (visualize == true)
+            {
+                viewer.showCloud(semout2);
+            }
         }
-        //高翔的octomap start
-        octomap::Pointcloud cloud_octo;
-        for (auto p : tmp->points)
-            cloud_octo.push_back(p.x, p.y, p.z);
-
-        tree.insertPointCloud(cloud_octo,
-                              octomap::point3d(pose(0, 3), pose(1, 3), pose(2, 3)));
-
-        for (auto p : tmp->points)
-            tree.integrateNodeColor(p.x, p.y, p.z, p.r, p.g, p.b);
-        //高翔的octomap end
-        *output += *tmp;
-        tmp->clear();
-        newCloud->clear();
-        semtmp->clear();
-        if (visualize == true)
+        else
         {
-            viewer.showCloud(semout2);
+            FRAME nokeyFrame = readFrame(alli, pd);
+            img_ori = nokeyFrame.rgb.clone();
+            
         }
+                    IplImage img_text_n;
+            img_text_n = IplImage(img_ori);
+            IplImage *img_text = &img_text_n;
+            int text_x = 3;
+            int text_y = 33;
+            CvFont font;
+            cvInitFont(&font, CV_FONT_HERSHEY_DUPLEX, 0.5, 0.5, 0, 1, 4);
+            for (int idx = 0; idx < semlabel.labelname.size(); idx++)
+            {
+                cvRectangle(img_text, cvPoint(text_x, text_y), cvPoint(text_x + 0 + int(100 * per[idx]), text_y - 6), cvScalar(255, 0, 0), 6);
+                if (outlabel == idx)
+                {
+                    cvPutText(img_text, semlabel.labelname[idx].c_str(), cvPoint(text_x, text_y), &font, cvScalar(0, 255, 0));
+                }
+                else
+                {
+                    cvPutText(img_text, semlabel.labelname[idx].c_str(), cvPoint(text_x, text_y), &font, cvScalar(0, 0, 255));
+                }
+                text_y += 18;
+            }
+            //cv::Mat img_res;
+            // cv::resize(img,img_res,cv::Size(1280,960));
+            cvShowImage("pic+test", img_text);
+
+            cv::waitKey(30);
     }
     voxel.setInputCloud(output);
     voxel.filter(*tmp);
