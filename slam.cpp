@@ -260,7 +260,32 @@ int main(int argc, char **argv)
         }
         //cout<<semlabel.labelname[outlabel]<<endl;
         //图像加文字
-        cv::imshow("pic+test",keyframes[i].rgb);
+        cv::Mat img_ori=img.clone();
+        IplImage img_text_n;
+        img_text_n=IplImage(img_ori);
+        IplImage* img_text=&img_text_n;
+        int text_x=3;
+        int text_y=33;
+        CvFont font;
+        cvInitFont(&font, CV_FONT_HERSHEY_DUPLEX, 0.5, 0.5, 0, 1, 4);
+        for (int idx = 0; idx < predictions.size(); idx++)
+        {
+            cvRectangle(img_text,cvPoint(text_x,text_y),cvPoint(text_x+0+int(100*float(predictions[idx].second)),text_y - 6), cvScalar(255,0,0),6);
+            if (outlabel == idx)
+            {
+                cvPutText(img_text,semlabel.labelname[idx].c_str(),cvPoint(text_x,text_y),&font,cvScalar(0,255,0));
+            }
+            else
+            {
+                cvPutText(img_text,semlabel.labelname[idx].c_str(),cvPoint(text_x,text_y),&font,cvScalar(0,0,255));
+ 
+            }
+            text_y += 18;
+        }
+        //cv::Mat img_res;
+       // cv::resize(img,img_res,cv::Size(1280,960));
+        cvShowImage("pic+test",img_text);
+        
         cv::waitKey(30); 
         //
         for (auto ite : tmp->points)
