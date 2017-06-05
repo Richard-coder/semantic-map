@@ -171,8 +171,7 @@ int main(int argc, char **argv)
     globalOptimizer.save("./result_after.g2o");
     cout << "Optimization done." << endl;
 
-
-double gridsize = atof(pd.getData("voxel_grid").c_str()); //分辨图可以在parameters.txt里调
+    double gridsize = atof(pd.getData("voxel_grid").c_str()); //分辨图可以在parameters.txt里调
 
     //pcl实时显示
     pcl::visualization::CloudViewer viewer("viewer");
@@ -183,13 +182,15 @@ double gridsize = atof(pd.getData("voxel_grid").c_str()); //分辨图可以在pa
     double sem_ProbHit_;
     double sem_ProbMiss_;
     double prob_thres_ = 0.5;
-    cell_resolution_ = gridsize;                             //octomap是吗以八叉树形式存储，这里设置地图的分辨率
+    cell_resolution_ = gridsize;                         //octomap是吗以八叉树形式存储，这里设置地图的分辨率
     semMap = new octomap::ColorOcTree(cell_resolution_); //创建指向地图对象的指针
     semMap->setClampingThresMax(1.0);                    //在八叉树中，用概率表示一个节点是否被占据，这里设置概率的最大值和最小值
     semMap->setOccupancyThres(0);
     octomap::ColorOcTree tree(gridsize);
     //place2005test------start
-    SemanticLabel semlabel;
+    string label_file =pd.getData("label_file");
+    SemanticLabel semlabel(label_file);
+    /*rgb2bgr
     for (int i = 0; i < semlabel.labelname.size(); i++)
     {
         int temp;
@@ -197,17 +198,18 @@ double gridsize = atof(pd.getData("voxel_grid").c_str()); //分辨图可以在pa
         semlabel.labelcolor[i][0] = semlabel.labelcolor[i][2];
         semlabel.labelcolor[i][2] = temp;
     }
+    */
     ::google::InitGoogleLogging(argv[0]);
 
     string model_file = "/home/richard/ros-semantic-mapper/deploy.prototxt";
     string trained_file = "/home/richard/ros-semantic-mapper/places.caffemodel";
     string mean_file = "/home/richard/ros-semantic-mapper/places205CNN_mean.binaryproto";
-    string label_file = "/home/richard/Desktop/place205_c++_test/index.txt";
+    
 
-    string file = "/home/richard/Desktop/data/rgb_png/2.png";
+    //string file = "/home/richard/Desktop/data/rgb_png/2.png";
     Classifier classifier(model_file, trained_file, mean_file, semlabel);
-    std::cout << "---------- Prediction for "
-              << file << " ----------" << std::endl;
+    /*std::cout << "---------- Prediction for "
+              << file << " ----------" << std::endl;*/
     /*
     cv::Mat img = cv::imread(file, -1);
     CHECK(!img.empty()) << "Unable to decode image " << file;
@@ -243,19 +245,18 @@ double gridsize = atof(pd.getData("voxel_grid").c_str()); //分辨图可以在pa
     pass.setFilterFieldName("z");
     pass.setFilterLimits(0.0, 4.0); //4m以上就不要了
 
-    
     voxel.setLeafSize(gridsize, gridsize, gridsize);
     //
     cv::namedWindow("pic+test");
     //
-            int outlabel = 0;
-cv::Mat img_ori;
-float per[semlabel.labelname.size()];
+    int outlabel = 0;
+    cv::Mat img_ori;
+    float per[semlabel.labelname.size()];
     for (size_t alli = 1; alli < allframe.size(); alli++)
     {
-        if (allframe[alli]!=-1)
+        if (allframe[alli] != -1)
         {
-            int i=allframe[alli];
+            int i = allframe[alli];
             // 从g2o优化结果中读取当前帧优化过后的相机位姿
             g2o::VertexSE3 *vertex = dynamic_cast<g2o::VertexSE3 *>(globalOptimizer.vertex(keyframes[i].frameID));
             Eigen::Isometry3d pose = vertex->estimate();
@@ -278,7 +279,7 @@ float per[semlabel.labelname.size()];
                 {
                     outlabel = idx;
                 }
-                per[idx]=float(predictions[idx].second);
+                per[idx] = float(predictions[idx].second);
                 //cout << semlabel.labelname[idx] << '\t' <<predictions[idx].second<<'\t'<< semlabel.labelidx[idx] << '\t' << semlabel.labelcolor[idx][0] << '\t' << semlabel.labelcolor[idx][1] << '\t' << semlabel.labelcolor[idx][2] << '\t' << endl;
             }
             //cout<<semlabel.labelname[outlabel]<<endl;
@@ -343,33 +344,32 @@ float per[semlabel.labelname.size()];
         {
             FRAME nokeyFrame = readFrame(alli, pd);
             img_ori = nokeyFrame.rgb.clone();
-            
         }
-                    IplImage img_text_n;
-            img_text_n = IplImage(img_ori);
-            IplImage *img_text = &img_text_n;
-            int text_x = 3;
-            int text_y = 33;
-            CvFont font;
-            cvInitFont(&font, CV_FONT_HERSHEY_DUPLEX, 0.5, 0.5, 0, 1, 4);
-            for (int idx = 0; idx < semlabel.labelname.size(); idx++)
+        IplImage img_text_n;
+        img_text_n = IplImage(img_ori);
+        IplImage *img_text = &img_text_n;
+        int text_x = 3;
+        int text_y = 33;
+        CvFont font;
+        cvInitFont(&font, CV_FONT_HERSHEY_DUPLEX, 0.5, 0.5, 0, 1, 4);
+        for (int idx = 0; idx < semlabel.labelname.size(); idx++)
+        {
+            cvRectangle(img_text, cvPoint(text_x, text_y), cvPoint(text_x + 0 + int(100 * per[idx]), text_y - 6), cvScalar(255, 0, 0), 6);
+            if (outlabel == idx)
             {
-                cvRectangle(img_text, cvPoint(text_x, text_y), cvPoint(text_x + 0 + int(100 * per[idx]), text_y - 6), cvScalar(255, 0, 0), 6);
-                if (outlabel == idx)
-                {
-                    cvPutText(img_text, semlabel.labelname[idx].c_str(), cvPoint(text_x, text_y), &font, cvScalar(0, 255, 0));
-                }
-                else
-                {
-                    cvPutText(img_text, semlabel.labelname[idx].c_str(), cvPoint(text_x, text_y), &font, cvScalar(0, 0, 255));
-                }
-                text_y += 18;
+                cvPutText(img_text, semlabel.labelname[idx].c_str(), cvPoint(text_x, text_y), &font, cvScalar(0, 255, 0));
             }
-            //cv::Mat img_res;
-            // cv::resize(img,img_res,cv::Size(1280,960));
-            cvShowImage("pic+test", img_text);
+            else
+            {
+                cvPutText(img_text, semlabel.labelname[idx].c_str(), cvPoint(text_x, text_y), &font, cvScalar(0, 0, 255));
+            }
+            text_y += 18;
+        }
+        //cv::Mat img_res;
+        // cv::resize(img,img_res,cv::Size(1280,960));
+        cvShowImage("pic+test", img_text);
 
-            cv::waitKey(30);
+        cv::waitKey(30);
     }
     voxel.setInputCloud(output);
     voxel.filter(*tmp);
