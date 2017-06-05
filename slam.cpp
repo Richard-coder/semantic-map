@@ -188,7 +188,9 @@ int main(int argc, char **argv)
     semMap->setOccupancyThres(0);
     octomap::ColorOcTree tree(gridsize);
     //place2005test------start
-    SemanticLabel semlabel;
+    string label_file =pd.getData("label_file");
+    SemanticLabel semlabel(label_file);
+    /*rgb2bgr
     for (int i = 0; i < semlabel.labelname.size(); i++)
     {
         int temp;
@@ -196,17 +198,18 @@ int main(int argc, char **argv)
         semlabel.labelcolor[i][0] = semlabel.labelcolor[i][2];
         semlabel.labelcolor[i][2] = temp;
     }
+    */
     ::google::InitGoogleLogging(argv[0]);
 
     string model_file = "/home/richard/ros-semantic-mapper/deploy.prototxt";
     string trained_file = "/home/richard/ros-semantic-mapper/places.caffemodel";
     string mean_file = "/home/richard/ros-semantic-mapper/places205CNN_mean.binaryproto";
-    string label_file = "/home/richard/Desktop/place205_c++_test/index.txt";
+    
 
-    string file = "/home/richard/Desktop/data/rgb_png/2.png";
+    //string file = "/home/richard/Desktop/data/rgb_png/2.png";
     Classifier classifier(model_file, trained_file, mean_file, semlabel);
-    std::cout << "---------- Prediction for "
-              << file << " ----------" << std::endl;
+    /*std::cout << "---------- Prediction for "
+              << file << " ----------" << std::endl;*/
     /*
     cv::Mat img = cv::imread(file, -1);
     CHECK(!img.empty()) << "Unable to decode image " << file;
