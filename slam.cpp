@@ -32,7 +32,7 @@ using namespace std;
 // g2o定义
 typedef g2o::BlockSolver_6_3 SlamBlockSolver;
 typedef g2o::LinearSolverEigen<SlamBlockSolver::PoseMatrixType> SlamLinearSolver;
-
+using namespace Eigen;
 // 给定index，读取一帧数据
 FRAME readFrame(int index, ParameterReader &pd);
 // 给定旋转矩阵和评议向量，估计帧间运动大小的函数
@@ -55,6 +55,21 @@ void checkRandomLoops(vector<FRAME> &frames, FRAME &currFrame, g2o::SparseOptimi
 
 int main(int argc, char **argv)
 {
+    Matrix<float,11,11> M1;
+    M1<<1/11.0,1/11.0,1/11.0,1/11.0,1/11.0,1/11.0,1/11.0,1/11.0,1/11.0,1/11.0,1/11.0,
+1/11.0,1/11.0,1/11.0,1/11.0,1/11.0,1/11.0,1/11.0,1/11.0,1/11.0,1/11.0,1/11.0,
+1/11.0,1/11.0,1/11.0,1/11.0,1/11.0,1/11.0,1/11.0,1/11.0,1/11.0,1/11.0,1/11.0,
+0,0,0,0.05,0,0.95,0,0,0,0,0,
+1/11.0,1/11.0,1/11.0,1/11.0,1/11.0,1/11.0,1/11.0,1/11.0,1/11.0,1/11.0,1/11.0,
+0,0,0,0.05,0,0.95,0,0,0,0,0,
+1/11.0,1/11.0,1/11.0,1/11.0,1/11.0,1/11.0,1/11.0,1/11.0,1/11.0,1/11.0,1/11.0,
+1/11.0,1/11.0,1/11.0,1/11.0,1/11.0,1/11.0,1/11.0,1/11.0,1/11.0,1/11.0,1/11.0,
+1/11.0,1/11.0,1/11.0,1/11.0,1/11.0,1/11.0,1/11.0,1/11.0,1/11.0,1/11.0,1/11.0,
+1/11.0,1/11.0,1/11.0,1/11.0,1/11.0,1/11.0,1/11.0,1/11.0,1/11.0,1/11.0,1/11.0,
+1/11.0,1/11.0,1/11.0,1/11.0,1/11.0,1/11.0,1/11.0,1/11.0,1/11.0,1/11.0,1/11.0;
+
+Matrix<float,11,1> Mt_1;
+Mt_1<<1,1,1,1,1,1,1,1,1,1,1;
 
     // 前面部分和vo是一样的
     // 读取帧的开始和结束索引
@@ -251,6 +266,9 @@ int main(int argc, char **argv)
     //
     int outlabel = 0;
     cv::Mat img_ori;
+    Matrix<float,11,1> prob_res;
+    Matrix<float,11,1> MA;
+    Matrix<float,11,1> Mt;
     float per[semlabel.labelname.size()];
     for (size_t alli = 1; alli < allframe.size(); alli++)
     {
@@ -273,6 +291,17 @@ int main(int argc, char **argv)
             cv::Mat img = keyframes[i].rgb;
             vector<Prediction> predictions = classifier.Classify(img);
 
+            for (int idx = 0; idx < predictions.size(); idx++){
+                prob_res(idx,0)=predictions[idx].second;
+            }
+            MA=M1*Mt_1;
+            Mt=(prob_res.array()*MA.array()).matrix();
+            double psum=Mt.sum();
+            Mt=Mt/psum;
+            Mt_1=Mt;
+            for (int idx = 0; idx < predictions.size(); idx++){
+                predictions[idx].second=Mt(idx,0);
+            }
             for (int idx = 0; idx < predictions.size(); idx++)
             {
                 if (predictions[outlabel].second < predictions[idx].second)
@@ -369,7 +398,7 @@ int main(int argc, char **argv)
         // cv::resize(img,img_res,cv::Size(1280,960));
         cvShowImage("pic+test", img_text);
 
-        cv::waitKey(30);
+        cv::waitKey(60);
     }
     voxel.setInputCloud(output);
     voxel.filter(*tmp);
