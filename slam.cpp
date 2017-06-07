@@ -54,7 +54,7 @@ void checkNearbyLoops(vector<FRAME> &frames, FRAME &currFrame, g2o::SparseOptimi
 void checkRandomLoops(vector<FRAME> &frames, FRAME &currFrame, g2o::SparseOptimizer &opti);
 
 int main(int argc, char **argv)
-{/*
+{ /*
     Matrix<float,11,11> M1;
     M1<<1/11.0,1/11.0,1/11.0,1/11.0,1/11.0,1/11.0,1/11.0,1/11.0,1/11.0,1/11.0,1/11.0,
 1/11.0,1/11.0,1/11.0,1/11.0,1/11.0,1/11.0,1/11.0,1/11.0,1/11.0,1/11.0,1/11.0,
@@ -71,6 +71,8 @@ int main(int argc, char **argv)
 Matrix<float,11,1> Mt_1;
 Mt_1<<1,1,1,1,1,1,1,1,1,1,1;
 */
+    ofstream outfile;
+    outfile.open("keyframe_id.txt");
     // 前面部分和vo是一样的
     // 读取帧的开始和结束索引
     ParameterReader pd;
@@ -163,6 +165,7 @@ Mt_1<<1,1,1,1,1,1,1,1,1,1,1;
             //将当前帧压入关键帧的堆栈
             keyframes.push_back(currFrame);
             ifkey = 1;
+            outfile<<currFrame.frameID<<endl;
             break;
         default:
             break;
@@ -177,7 +180,8 @@ Mt_1<<1,1,1,1,1,1,1,1,1,1,1;
         }
         ifkey = 0;
     }
-
+outfile.close();  
+    return 0;  
     // 优化（得到相机的位姿）
     cout << RESET "optimizing pose graph, vertices: " << globalOptimizer.vertices().size() << endl;
     globalOptimizer.save("./result_before.g2o");
@@ -203,7 +207,7 @@ Mt_1<<1,1,1,1,1,1,1,1,1,1,1;
     semMap->setOccupancyThres(0);
     octomap::ColorOcTree tree(gridsize);
     //place2005test------start
-    string label_file =pd.getData("label_file");
+    string label_file = pd.getData("label_file");
     SemanticLabel semlabel(label_file);
     /*rgb2bgr
     for (int i = 0; i < semlabel.labelname.size(); i++)
@@ -219,7 +223,6 @@ Mt_1<<1,1,1,1,1,1,1,1,1,1,1;
     string model_file = "/home/richard/ros-semantic-mapper/deploy.prototxt";
     string trained_file = "/home/richard/ros-semantic-mapper/places.caffemodel";
     string mean_file = "/home/richard/ros-semantic-mapper/places205CNN_mean.binaryproto";
-    
 
     //string file = "/home/richard/Desktop/data/rgb_png/2.png";
     Classifier classifier(model_file, trained_file, mean_file, semlabel);
@@ -292,7 +295,7 @@ Mt_1<<1,1,1,1,1,1,1,1,1,1,1;
             //对当前场景进行预测
             cv::Mat img = keyframes[i].rgb;
             vector<Prediction> predictions = classifier.Classify(img);
-/*
+            /*
             for (int idx = 0; idx < predictions.size(); idx++){
                 prob_res(idx,0)=predictions[idx].second;
             }
@@ -422,9 +425,8 @@ Mt_1<<1,1,1,1,1,1,1,1,1,1,1;
     //
     //
     FRAME showframe = readFrame(startIndex, pd);
-     cv::imshow("pic+test", showframe.rgb);
-     cv::waitKey(-1);
-
+    cv::imshow("pic+test", showframe.rgb);
+    cv::waitKey(-1);
 }
 
 FRAME readFrame(int index, ParameterReader &pd)
