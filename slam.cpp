@@ -377,6 +377,7 @@ Mt_1<<1,1,1,1,1,1,1,1,1,1,1;
             FRAME nokeyFrame = readFrame(alli, pd);
             img_ori = nokeyFrame.rgb.clone();
         }
+        /*
         IplImage img_text_n;
         img_text_n = IplImage(img_ori);
         IplImage *img_text = &img_text_n;
@@ -402,6 +403,7 @@ Mt_1<<1,1,1,1,1,1,1,1,1,1,1;
         cvShowImage("pic+test", img_text);
 
         cv::waitKey(60);
+        */
     }
     voxel.setInputCloud(output);
     voxel.filter(*tmp);
@@ -419,6 +421,10 @@ Mt_1<<1,1,1,1,1,1,1,1,1,1,1;
     cout << "done." << endl;
     //
     //
+    FRAME showframe = readFrame(startIndex, pd);
+     cv::imshow("pic+test", showframe.rgb);
+     cv::waitKey(-1);
+
 }
 
 FRAME readFrame(int index, ParameterReader &pd)
