@@ -32,7 +32,7 @@ using namespace std;
 // g2o定义
 typedef g2o::BlockSolver_6_3 SlamBlockSolver;
 typedef g2o::LinearSolverEigen<SlamBlockSolver::PoseMatrixType> SlamLinearSolver;
-using namespace Eigen;
+//using namespace Eigen;
 // 给定index，读取一帧数据
 FRAME readFrame(int index, ParameterReader &pd);
 // 给定旋转矩阵和评议向量，估计帧间运动大小的函数
@@ -54,7 +54,7 @@ void checkNearbyLoops(vector<FRAME> &frames, FRAME &currFrame, g2o::SparseOptimi
 void checkRandomLoops(vector<FRAME> &frames, FRAME &currFrame, g2o::SparseOptimizer &opti);
 
 int main(int argc, char **argv)
-{
+{/*
     Matrix<float,11,11> M1;
     M1<<1/11.0,1/11.0,1/11.0,1/11.0,1/11.0,1/11.0,1/11.0,1/11.0,1/11.0,1/11.0,1/11.0,
 1/11.0,1/11.0,1/11.0,1/11.0,1/11.0,1/11.0,1/11.0,1/11.0,1/11.0,1/11.0,1/11.0,
@@ -70,7 +70,7 @@ int main(int argc, char **argv)
 
 Matrix<float,11,1> Mt_1;
 Mt_1<<1,1,1,1,1,1,1,1,1,1,1;
-
+*/
     // 前面部分和vo是一样的
     // 读取帧的开始和结束索引
     ParameterReader pd;
@@ -189,7 +189,7 @@ Mt_1<<1,1,1,1,1,1,1,1,1,1,1;
     double gridsize = atof(pd.getData("voxel_grid").c_str()); //分辨图可以在parameters.txt里调
 
     //pcl实时显示
-    pcl::visualization::CloudViewer viewer("viewer");
+    /*pcl::visualization::CloudViewer viewer("viewer");*/
     bool visualize = pd.getData("visualize_pointcloud") == string("yes");
     //octomap
     octomap::ColorOcTree *semMap;
@@ -266,9 +266,11 @@ Mt_1<<1,1,1,1,1,1,1,1,1,1,1;
     //
     int outlabel = 0;
     cv::Mat img_ori;
+    /*
     Matrix<float,11,1> prob_res;
     Matrix<float,11,1> MA;
     Matrix<float,11,1> Mt;
+    */
     float per[semlabel.labelname.size()];
     for (size_t alli = 1; alli < allframe.size(); alli++)
     {
@@ -290,7 +292,7 @@ Mt_1<<1,1,1,1,1,1,1,1,1,1,1;
             //对当前场景进行预测
             cv::Mat img = keyframes[i].rgb;
             vector<Prediction> predictions = classifier.Classify(img);
-
+/*
             for (int idx = 0; idx < predictions.size(); idx++){
                 prob_res(idx,0)=predictions[idx].second;
             }
@@ -302,6 +304,7 @@ Mt_1<<1,1,1,1,1,1,1,1,1,1,1;
             for (int idx = 0; idx < predictions.size(); idx++){
                 predictions[idx].second=Mt(idx,0);
             }
+            */
             for (int idx = 0; idx < predictions.size(); idx++)
             {
                 if (predictions[outlabel].second < predictions[idx].second)
@@ -364,12 +367,14 @@ Mt_1<<1,1,1,1,1,1,1,1,1,1,1;
             tmp->clear();
             newCloud->clear();
             semtmp->clear();
+            /*
             if (visualize == true)
             {
                 viewer.showCloud(semout2);
             }
+            */
         }
-        else
+        /*else
         {
             FRAME nokeyFrame = readFrame(alli, pd);
             img_ori = nokeyFrame.rgb.clone();
@@ -399,6 +404,7 @@ Mt_1<<1,1,1,1,1,1,1,1,1,1,1;
         cvShowImage("pic+test", img_text);
 
         cv::waitKey(60);
+        */
     }
     voxel.setInputCloud(output);
     voxel.filter(*tmp);
