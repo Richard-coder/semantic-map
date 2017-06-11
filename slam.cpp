@@ -54,23 +54,7 @@ void checkNearbyLoops(vector<FRAME> &frames, FRAME &currFrame, g2o::SparseOptimi
 void checkRandomLoops(vector<FRAME> &frames, FRAME &currFrame, g2o::SparseOptimizer &opti);
 
 int main(int argc, char **argv)
-{ /*
-    Matrix<float,11,11> M1;
-    M1<<1/11.0,1/11.0,1/11.0,1/11.0,1/11.0,1/11.0,1/11.0,1/11.0,1/11.0,1/11.0,1/11.0,
-1/11.0,1/11.0,1/11.0,1/11.0,1/11.0,1/11.0,1/11.0,1/11.0,1/11.0,1/11.0,1/11.0,
-1/11.0,1/11.0,1/11.0,1/11.0,1/11.0,1/11.0,1/11.0,1/11.0,1/11.0,1/11.0,1/11.0,
-0,0,0,0.05,0,0.95,0,0,0,0,0,
-1/11.0,1/11.0,1/11.0,1/11.0,1/11.0,1/11.0,1/11.0,1/11.0,1/11.0,1/11.0,1/11.0,
-0,0,0,0.05,0,0.95,0,0,0,0,0,
-1/11.0,1/11.0,1/11.0,1/11.0,1/11.0,1/11.0,1/11.0,1/11.0,1/11.0,1/11.0,1/11.0,
-1/11.0,1/11.0,1/11.0,1/11.0,1/11.0,1/11.0,1/11.0,1/11.0,1/11.0,1/11.0,1/11.0,
-1/11.0,1/11.0,1/11.0,1/11.0,1/11.0,1/11.0,1/11.0,1/11.0,1/11.0,1/11.0,1/11.0,
-1/11.0,1/11.0,1/11.0,1/11.0,1/11.0,1/11.0,1/11.0,1/11.0,1/11.0,1/11.0,1/11.0,
-1/11.0,1/11.0,1/11.0,1/11.0,1/11.0,1/11.0,1/11.0,1/11.0,1/11.0,1/11.0,1/11.0;
-
-Matrix<float,11,1> Mt_1;
-Mt_1<<1,1,1,1,1,1,1,1,1,1,1;
-*/
+{
     ofstream outfile;
     outfile.open("keyframe_id.txt");
     // 前面部分和vo是一样的
@@ -148,12 +132,6 @@ Mt_1<<1,1,1,1,1,1,1,1,1,1,1;
         case KEYFRAME:
             cout << GREEN "This is a new keyframe" << endl;
             // 不远不近，刚好
-            /**
-             * This is important!!
-             * This is important!!
-             * This is important!!
-             * (very important so I've said three times!)
-             */
             // 检测回环
             if (check_loop_closure)
             {
@@ -165,7 +143,7 @@ Mt_1<<1,1,1,1,1,1,1,1,1,1,1;
             //将当前帧压入关键帧的堆栈
             keyframes.push_back(currFrame);
             ifkey = 1;
-            outfile<<currFrame.frameID<<endl;
+            outfile << currFrame.frameID << endl;
             break;
         default:
             break;
@@ -180,8 +158,7 @@ Mt_1<<1,1,1,1,1,1,1,1,1,1,1;
         }
         ifkey = 0;
     }
-outfile.close();  
-    return 0;  
+    outfile.close();
     // 优化（得到相机的位姿）
     cout << RESET "optimizing pose graph, vertices: " << globalOptimizer.vertices().size() << endl;
     globalOptimizer.save("./result_before.g2o");
@@ -209,46 +186,15 @@ outfile.close();
     //place2005test------start
     string label_file = pd.getData("label_file");
     SemanticLabel semlabel(label_file);
-    /*rgb2bgr
-    for (int i = 0; i < semlabel.labelname.size(); i++)
-    {
-        int temp;
-        temp = semlabel.labelcolor[i][0];
-        semlabel.labelcolor[i][0] = semlabel.labelcolor[i][2];
-        semlabel.labelcolor[i][2] = temp;
-    }
-    */
+
     ::google::InitGoogleLogging(argv[0]);
 
     string model_file = "/home/richard/ros-semantic-mapper/deploy.prototxt";
     string trained_file = "/home/richard/ros-semantic-mapper/places.caffemodel";
     string mean_file = "/home/richard/ros-semantic-mapper/places205CNN_mean.binaryproto";
 
-    //string file = "/home/richard/Desktop/data/rgb_png/2.png";
     Classifier classifier(model_file, trained_file, mean_file, semlabel);
-    /*std::cout << "---------- Prediction for "
-              << file << " ----------" << std::endl;*/
-    /*
-    cv::Mat img = cv::imread(file, -1);
-    CHECK(!img.empty()) << "Unable to decode image " << file;
-    std::vector<Prediction> predictions = classifier.Classify(img);
 
-     //Print the top N predictions. 
-    //这里获得的概率就是神经网络的输出，没有经过归一化等处理
-    for (size_t i = 0; i < predictions.size(); ++i)
-    {
-        Prediction p = predictions[i];
-        std::cout << std::fixed << std::setprecision(4) << p.second << " - \""
-                  << p.first << "\"" << std::endl;
-    }
-    //place205test------end
-
-    for (int i = 0; i < semlabel.labelname.size(); i++)
-    {
-        cout << semlabel.labelname[i] << '\t' << semlabel.labelidx[i] << '\t' << semlabel.labelcolor[i][0] << '\t' << semlabel.labelcolor[i][1] << '\t' << semlabel.labelcolor[i][2] << '\t' << endl;
-    }
-    return 0;
-*/
     // 拼接点云地图，（在进行这一步的时候，关键帧都已经提取完了啊。）
     cout << "saving the point cloud map..." << endl;
     PointCloud::Ptr output(new PointCloud()); //全局地图
@@ -269,11 +215,7 @@ outfile.close();
     //
     int outlabel = 0;
     cv::Mat img_ori;
-    /*
-    Matrix<float,11,1> prob_res;
-    Matrix<float,11,1> MA;
-    Matrix<float,11,1> Mt;
-    */
+    cv::namedWindow("pic+test");
     float per[semlabel.labelname.size()];
     for (size_t alli = 1; alli < allframe.size(); alli++)
     {
@@ -295,19 +237,7 @@ outfile.close();
             //对当前场景进行预测
             cv::Mat img = keyframes[i].rgb;
             vector<Prediction> predictions = classifier.Classify(img);
-            /*
-            for (int idx = 0; idx < predictions.size(); idx++){
-                prob_res(idx,0)=predictions[idx].second;
-            }
-            MA=M1*Mt_1;
-            Mt=(prob_res.array()*MA.array()).matrix();
-            double psum=Mt.sum();
-            Mt=Mt/psum;
-            Mt_1=Mt;
-            for (int idx = 0; idx < predictions.size(); idx++){
-                predictions[idx].second=Mt(idx,0);
-            }
-            */
+
             for (int idx = 0; idx < predictions.size(); idx++)
             {
                 if (predictions[outlabel].second < predictions[idx].second)
@@ -315,9 +245,7 @@ outfile.close();
                     outlabel = idx;
                 }
                 per[idx] = float(predictions[idx].second);
-                //cout << semlabel.labelname[idx] << '\t' <<predictions[idx].second<<'\t'<< semlabel.labelidx[idx] << '\t' << semlabel.labelcolor[idx][0] << '\t' << semlabel.labelcolor[idx][1] << '\t' << semlabel.labelcolor[idx][2] << '\t' << endl;
             }
-            //cout<<semlabel.labelname[outlabel]<<endl;
             //图像加文字
             img_ori = img.clone();
 
@@ -355,7 +283,7 @@ outfile.close();
                 p.b = c.b;
                 semout2->points.push_back(p);
             }
-            //高翔的octomap start
+            //octomap start
             octomap::Pointcloud cloud_octo;
             for (auto p : tmp->points)
                 cloud_octo.push_back(p.x, p.y, p.z);
@@ -365,7 +293,7 @@ outfile.close();
 
             for (auto p : tmp->points)
                 tree.integrateNodeColor(p.x, p.y, p.z, p.r, p.g, p.b);
-            //高翔的octomap end
+            //octomap end
             *output += *tmp;
             tmp->clear();
             newCloud->clear();
@@ -380,7 +308,7 @@ outfile.close();
             FRAME nokeyFrame = readFrame(alli, pd);
             img_ori = nokeyFrame.rgb.clone();
         }
-        /*
+
         IplImage img_text_n;
         img_text_n = IplImage(img_ori);
         IplImage *img_text = &img_text_n;
@@ -401,12 +329,10 @@ outfile.close();
             }
             text_y += 18;
         }
-        //cv::Mat img_res;
-        // cv::resize(img,img_res,cv::Size(1280,960));
+
         cvShowImage("pic+test", img_text);
 
         cv::waitKey(60);
-        */
     }
     voxel.setInputCloud(output);
     voxel.filter(*tmp);
@@ -415,15 +341,14 @@ outfile.close();
     voxel.filter(*semtmp2);
 
     pcl::io::savePCDFile("./result.pcd", *tmp);
-    //pcl::io::savePCDFile("./semresult.pcd", *semtmp);
+
     pcl::io::savePCDFile("./2semresult.pcd", *semtmp2);
     cout << "Final map is saved." << endl;
     tree.updateInnerOccupancy();
     tree.write("map.ot");
 
     cout << "done." << endl;
-    //
-    //
+
     FRAME showframe = readFrame(startIndex, pd);
     cv::imshow("pic+test", showframe.rgb);
     cv::waitKey(-1);
