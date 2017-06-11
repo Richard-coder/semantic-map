@@ -1,10 +1,9 @@
 /*************************************************************************
-	> File Name: rgbd-slam-tutorial-gx/part V/src/visualOdometry.cpp
-	> Author: xiang gao
-	> Mail: gaoxiang12@mails.tsinghua.edu.cn
-	> Created Time: 2015年08月15日 星期六 15时35分42秒
-    * add g2o slam end to visual odometry
-    * add keyframe and simple loop closure
+	> File Name: Semantic Map
+	> Author: Weizhi Zhang
+	> Mail: zhi_zhuce@126.com
+	> Created Time: 2017年06月11日
+    * 104,with beyes,show map
  ************************************************************************/
 
 #include <iostream>
@@ -55,21 +54,21 @@ void checkRandomLoops(vector<FRAME> &frames, FRAME &currFrame, g2o::SparseOptimi
 
 int main(int argc, char **argv)
 {
-    Matrix<float,11,11> M1;
-    M1<<1/11.0,1/11.0,1/11.0,1/11.0,1/11.0,1/11.0,1/11.0,1/11.0,1/11.0,1/11.0,1/11.0,
-1/11.0,1/11.0,1/11.0,1/11.0,1/11.0,1/11.0,1/11.0,1/11.0,1/11.0,1/11.0,1/11.0,
-1/11.0,1/11.0,1/11.0,1/11.0,1/11.0,1/11.0,1/11.0,1/11.0,1/11.0,1/11.0,1/11.0,
-0,0,0,0.05,0,0.95,0,0,0,0,0,
-1/11.0,1/11.0,1/11.0,1/11.0,1/11.0,1/11.0,1/11.0,1/11.0,1/11.0,1/11.0,1/11.0,
-0,0,0,0.05,0,0.95,0,0,0,0,0,
-1/11.0,1/11.0,1/11.0,1/11.0,1/11.0,1/11.0,1/11.0,1/11.0,1/11.0,1/11.0,1/11.0,
-1/11.0,1/11.0,1/11.0,1/11.0,1/11.0,1/11.0,1/11.0,1/11.0,1/11.0,1/11.0,1/11.0,
-1/11.0,1/11.0,1/11.0,1/11.0,1/11.0,1/11.0,1/11.0,1/11.0,1/11.0,1/11.0,1/11.0,
-1/11.0,1/11.0,1/11.0,1/11.0,1/11.0,1/11.0,1/11.0,1/11.0,1/11.0,1/11.0,1/11.0,
-1/11.0,1/11.0,1/11.0,1/11.0,1/11.0,1/11.0,1/11.0,1/11.0,1/11.0,1/11.0,1/11.0;
+    Matrix<float, 11, 11> M1;
+    M1 << 1 / 11.0, 1 / 11.0, 1 / 11.0, 1 / 11.0, 1 / 11.0, 1 / 11.0, 1 / 11.0, 1 / 11.0, 1 / 11.0, 1 / 11.0, 1 / 11.0,
+        1 / 11.0, 1 / 11.0, 1 / 11.0, 1 / 11.0, 1 / 11.0, 1 / 11.0, 1 / 11.0, 1 / 11.0, 1 / 11.0, 1 / 11.0, 1 / 11.0,
+        1 / 11.0, 1 / 11.0, 1 / 11.0, 1 / 11.0, 1 / 11.0, 1 / 11.0, 1 / 11.0, 1 / 11.0, 1 / 11.0, 1 / 11.0, 1 / 11.0,
+        0, 0, 0, 0.05, 0, 0.95, 0, 0, 0, 0, 0,
+        1 / 11.0, 1 / 11.0, 1 / 11.0, 1 / 11.0, 1 / 11.0, 1 / 11.0, 1 / 11.0, 1 / 11.0, 1 / 11.0, 1 / 11.0, 1 / 11.0,
+        0, 0, 0, 0.05, 0, 0.95, 0, 0, 0, 0, 0,
+        1 / 11.0, 1 / 11.0, 1 / 11.0, 1 / 11.0, 1 / 11.0, 1 / 11.0, 1 / 11.0, 1 / 11.0, 1 / 11.0, 1 / 11.0, 1 / 11.0,
+        1 / 11.0, 1 / 11.0, 1 / 11.0, 1 / 11.0, 1 / 11.0, 1 / 11.0, 1 / 11.0, 1 / 11.0, 1 / 11.0, 1 / 11.0, 1 / 11.0,
+        1 / 11.0, 1 / 11.0, 1 / 11.0, 1 / 11.0, 1 / 11.0, 1 / 11.0, 1 / 11.0, 1 / 11.0, 1 / 11.0, 1 / 11.0, 1 / 11.0,
+        1 / 11.0, 1 / 11.0, 1 / 11.0, 1 / 11.0, 1 / 11.0, 1 / 11.0, 1 / 11.0, 1 / 11.0, 1 / 11.0, 1 / 11.0, 1 / 11.0,
+        1 / 11.0, 1 / 11.0, 1 / 11.0, 1 / 11.0, 1 / 11.0, 1 / 11.0, 1 / 11.0, 1 / 11.0, 1 / 11.0, 1 / 11.0, 1 / 11.0;
 
-Matrix<float,11,1> Mt_1;
-Mt_1<<1,1,1,1,1,1,1,1,1,1,1;
+    Matrix<float, 11, 1> Mt_1;
+    Mt_1 << 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1;
 
     // 前面部分和vo是一样的
     // 读取帧的开始和结束索引
@@ -146,12 +145,6 @@ Mt_1<<1,1,1,1,1,1,1,1,1,1,1;
         case KEYFRAME:
             cout << GREEN "This is a new keyframe" << endl;
             // 不远不近，刚好
-            /**
-             * This is important!!
-             * This is important!!
-             * This is important!!
-             * (very important so I've said three times!)
-             */
             // 检测回环
             if (check_loop_closure)
             {
@@ -203,49 +196,17 @@ Mt_1<<1,1,1,1,1,1,1,1,1,1,1;
     semMap->setOccupancyThres(0);
     octomap::ColorOcTree tree(gridsize);
     //place2005test------start
-    string label_file =pd.getData("label_file");
+    string label_file = pd.getData("label_file");
     SemanticLabel semlabel(label_file);
-    /*rgb2bgr
-    for (int i = 0; i < semlabel.labelname.size(); i++)
-    {
-        int temp;
-        temp = semlabel.labelcolor[i][0];
-        semlabel.labelcolor[i][0] = semlabel.labelcolor[i][2];
-        semlabel.labelcolor[i][2] = temp;
-    }
-    */
+
     ::google::InitGoogleLogging(argv[0]);
 
     string model_file = "/home/richard/ros-semantic-mapper/deploy.prototxt";
     string trained_file = "/home/richard/ros-semantic-mapper/places.caffemodel";
     string mean_file = "/home/richard/ros-semantic-mapper/places205CNN_mean.binaryproto";
-    
 
-    //string file = "/home/richard/Desktop/data/rgb_png/2.png";
     Classifier classifier(model_file, trained_file, mean_file, semlabel);
-    /*std::cout << "---------- Prediction for "
-              << file << " ----------" << std::endl;*/
-    /*
-    cv::Mat img = cv::imread(file, -1);
-    CHECK(!img.empty()) << "Unable to decode image " << file;
-    std::vector<Prediction> predictions = classifier.Classify(img);
-
-     //Print the top N predictions. 
-    //这里获得的概率就是神经网络的输出，没有经过归一化等处理
-    for (size_t i = 0; i < predictions.size(); ++i)
-    {
-        Prediction p = predictions[i];
-        std::cout << std::fixed << std::setprecision(4) << p.second << " - \""
-                  << p.first << "\"" << std::endl;
-    }
-    //place205test------end
-
-    for (int i = 0; i < semlabel.labelname.size(); i++)
-    {
-        cout << semlabel.labelname[i] << '\t' << semlabel.labelidx[i] << '\t' << semlabel.labelcolor[i][0] << '\t' << semlabel.labelcolor[i][1] << '\t' << semlabel.labelcolor[i][2] << '\t' << endl;
-    }
-    return 0;
-*/
+    
     // 拼接点云地图，（在进行这一步的时候，关键帧都已经提取完了啊。）
     cout << "saving the point cloud map..." << endl;
     PointCloud::Ptr output(new PointCloud()); //全局地图
@@ -266,9 +227,9 @@ Mt_1<<1,1,1,1,1,1,1,1,1,1,1;
     //
     int outlabel = 0;
     cv::Mat img_ori;
-    Matrix<float,11,1> prob_res;
-    Matrix<float,11,1> MA;
-    Matrix<float,11,1> Mt;
+    Matrix<float, 11, 1> prob_res;
+    Matrix<float, 11, 1> MA;
+    Matrix<float, 11, 1> Mt;
     float per[semlabel.labelname.size()];
     for (size_t alli = 1; alli < allframe.size(); alli++)
     {
@@ -291,16 +252,18 @@ Mt_1<<1,1,1,1,1,1,1,1,1,1,1;
             cv::Mat img = keyframes[i].rgb;
             vector<Prediction> predictions = classifier.Classify(img);
 
-            for (int idx = 0; idx < predictions.size(); idx++){
-                prob_res(idx,0)=predictions[idx].second;
+            for (int idx = 0; idx < predictions.size(); idx++)
+            {
+                prob_res(idx, 0) = predictions[idx].second;
             }
-            MA=M1*Mt_1;
-            Mt=(prob_res.array()*MA.array()).matrix();
-            double psum=Mt.sum();
-            Mt=Mt/psum;
-            Mt_1=Mt;
-            for (int idx = 0; idx < predictions.size(); idx++){
-                predictions[idx].second=Mt(idx,0);
+            MA = M1 * Mt_1;
+            Mt = (prob_res.array() * MA.array()).matrix();
+            double psum = Mt.sum();
+            Mt = Mt / psum;
+            Mt_1 = Mt;
+            for (int idx = 0; idx < predictions.size(); idx++)
+            {
+                predictions[idx].second = Mt(idx, 0);
             }
             for (int idx = 0; idx < predictions.size(); idx++)
             {
@@ -309,13 +272,10 @@ Mt_1<<1,1,1,1,1,1,1,1,1,1,1;
                     outlabel = idx;
                 }
                 per[idx] = float(predictions[idx].second);
-                //cout << semlabel.labelname[idx] << '\t' <<predictions[idx].second<<'\t'<< semlabel.labelidx[idx] << '\t' << semlabel.labelcolor[idx][0] << '\t' << semlabel.labelcolor[idx][1] << '\t' << semlabel.labelcolor[idx][2] << '\t' << endl;
             }
-            //cout<<semlabel.labelname[outlabel]<<endl;
-            //图像加文字
+
             img_ori = img.clone();
 
-            //
             for (auto ite : tmp->points)
             {
                 for (int idx = 0; idx < predictions.size(); idx++)
@@ -349,7 +309,7 @@ Mt_1<<1,1,1,1,1,1,1,1,1,1,1;
                 p.b = c.b;
                 semout2->points.push_back(p);
             }
-            //高翔的octomap start
+            //octomap start
             octomap::Pointcloud cloud_octo;
             for (auto p : tmp->points)
                 cloud_octo.push_back(p.x, p.y, p.z);
@@ -359,7 +319,7 @@ Mt_1<<1,1,1,1,1,1,1,1,1,1,1;
 
             for (auto p : tmp->points)
                 tree.integrateNodeColor(p.x, p.y, p.z, p.r, p.g, p.b);
-            //高翔的octomap end
+            //octomap end
             *output += *tmp;
             tmp->clear();
             newCloud->clear();
