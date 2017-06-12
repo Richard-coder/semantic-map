@@ -248,16 +248,25 @@ int main(int argc, char **argv)
             pass.filter(*newCloud);
             // 把点云变换后加入全局地图中
             pcl::transformPointCloud(*newCloud, *tmp, pose.matrix());
-            //对当前场景进行预测
-            cv::Mat img = keyframes[i].rgb;
-            vector<Prediction> predictions = classifier.Classify(img);
+/*************************************************************************
+	> comment
+    * 场景分类及贝叶斯滤波
+ ************************************************************************/
 
+            //选择关键帧
+            cv::Mat img = keyframes[i].rgb;
+            //对当前关键帧进行场景分类
+            vector<Prediction> predictions = classifier.Classify(img);
+            //将分类结果存到一个矩阵里
             for (int idx = 0; idx < predictions.size(); idx++)
             {
                 prob_res(idx, 0) = predictions[idx].second;
             }
+            //贝叶斯滤波过程，M1是概率转移矩阵，Mt_1是上一时刻的分裂结果
             MA = M1 * Mt_1;
+            //Mt是当前时刻的分类结果
             Mt = (prob_res.array() * MA.array()).matrix();
+            //归一化
             double psum = Mt.sum();
             Mt = Mt / psum;
             Mt_1 = Mt;
@@ -275,7 +284,11 @@ int main(int argc, char **argv)
             }
 
             img_ori = img.clone();
-
+/*************************************************************************
+	> comment
+    * 语义映射及地图更新
+ ************************************************************************/
+            //语义映射过程，将地图保存到OctoMap
             for (auto ite : tmp->points)
             {
                 for (int idx = 0; idx < predictions.size(); idx++)
@@ -288,6 +301,7 @@ int main(int argc, char **argv)
                     cell->setColor(cS);
                 }
             }
+            //讲OctoMap保存到PCL二位点云
             for (octomap::ColorOcTree::iterator itr = semMap->begin_leafs(), end = semMap->end_leafs(); itr != end; itr++)
             {
                 octomap::ColorOcTreeNode *cell = semMap->search(itr.getCoordinate());

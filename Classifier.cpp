@@ -37,27 +37,13 @@ SemanticLabel::SemanticLabel(const string filename)
     pos_start = pos_find + 1;
     color.push_back(std::atoi(line.substr(pos_start, line.size() + 1 - pos_start).c_str()));
     labelcolor.push_back(color);
-
-    /*
-    int icolor;
-    unsigned char uccolor;
-
-    icolor = (std::atoi(line.substr(pos_start, pos_find - pos_start).c_str()));
-    uccolor = icolor;
-    color.push_back(uccolor);
-    pos_start = pos_find + 1;
-    pos_find = line.find(",", pos_start);
-    icolor = (std::atoi(line.substr(pos_start, pos_find - pos_start).c_str()));
-    uccolor = icolor;
-    color.push_back(uccolor);
-    pos_start = pos_find + 1;
-    icolor = (std::atoi(line.substr(pos_start, line.size() + 1 - pos_start).c_str()));
-    uccolor = icolor;
-    color.push_back(uccolor);
-    labelcolor.push_back(color);
-    */
   }
 }
+/*************************************************************************
+	> comment
+    * 加载神经网络模型，并初始化
+ ************************************************************************/
+
 Classifier::Classifier(const string &model_file,
                        const string &trained_file,
                        const string &mean_file,
@@ -66,7 +52,7 @@ Classifier::Classifier(const string &model_file,
 
   Caffe::set_mode(Caffe::CPU);
 
-  /* Load the network. */
+  /* 加载网络 */
   net_.reset(new Net<float>(model_file, TEST));
   net_->CopyTrainedLayersFrom(trained_file);
 
@@ -79,15 +65,14 @@ Classifier::Classifier(const string &model_file,
       << "Input layer should have 1 or 3 channels.";
   input_geometry_ = cv::Size(input_layer->width(), input_layer->height());
 
-  /* Load the binaryproto mean file. */
+  /* 加载均值文件*/
   SetMean(mean_file);
 
-  /* Load labels. */
+  /* 加载模型文件 */
   semlabel_ = semlabel;
+  
   Blob<float> *output_layer = net_->output_blobs()[0];
-  /*CHECK_EQ(labels_.size(), output_layer->channels())
-    << "Number of labels is different from the output layer dimension.";
-*/
+
 }
 
 static bool PairCompare(const std::pair<float, int> &lhs,
